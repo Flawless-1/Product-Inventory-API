@@ -1,3 +1,4 @@
+
 # Product Inventory API 🚀
 
 A RESTful backend service built with Node.js, Express, and PostgreSQL to manage product inventory.
@@ -25,3 +26,4 @@ product-inventory-api/
 ├── .env                    # Environment variables (git-ignored)
 ├── package.json            # Dependencies & scripts
 └── server.js               # App entry pointS
+
