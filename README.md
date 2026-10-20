@@ -1,11 +1,11 @@
 
-# Product Inventory API 🚀
+# Product Inventory API 
 
 A RESTful backend service built with Node.js, Express, and PostgreSQL to manage product inventory.
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 * **Runtime:** Node.js
 * **Framework:** Express.js
 * **Database:** PostgreSQL (Neon Cloud DB)
@@ -13,7 +13,7 @@ A RESTful backend service built with Node.js, Express, and PostgreSQL to manage 
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```text
 product-inventory-api/
