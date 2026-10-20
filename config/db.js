@@ -1,15 +1,14 @@
-const { Pool } = require('pg');
-require('dotenv').config();
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
+// Connect to local SQLite database file
+const dbPath = path.resolve(__dirname, '../inventory.db');
+const db = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+        console.error('Error opening database ❌', err.message);
+    } else {
+        console.log('Connected to local SQLite database (inventory.db) ✅');
+    }
 });
 
-pool.on('connect', () => {
-  console.log('Connected to the PostgreSQL database.');
-});
-
-module.exports = pool;
+module.exports = db;
