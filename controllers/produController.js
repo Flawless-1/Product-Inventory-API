@@ -22,10 +22,31 @@ exports.getProductById = async (req, res) => {
 
 // POST /api/products
 exports.createProduct = async (req, res) => {
-  // TODO: Team Member 1 - Implement product creation.
-  // Hint: Extract name, description, price, and stock from req.body.
-  // Validate fields and execute an INSERT INTO query. Return the created product.
-  res.status(501).json({ success: false, message: 'Not Implemented Yet - Assigned to Team Member 1' });
+  const { name, description, price, quantity } = req.body;
+
+  // Validate required fields
+  if (
+    !name ||
+    price === undefined || price === null || price === '' ||
+    quantity === undefined || quantity === null || quantity === ''
+  ) {
+    return res.status(400).json({
+      success: false,
+      error: 'name, price and quantity are required'
+    });
+  }
+
+  db.run(
+    'INSERT INTO products (name, description, price, quantity) VALUES (?, ?, ?, ?)',
+    [name, description, price, quantity],
+    function (err) {
+      if (err) {
+        console.error(err.message);
+        return res.status(500).json({ success: false, error: 'Server Error' });
+      }
+      return res.status(201).json({ success: true, id: this.lastID });
+    }
+  );
 };
 
 // --- TEAM TASK 2 ---
