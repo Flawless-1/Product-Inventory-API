@@ -36,7 +36,7 @@ exports.createProduct = async (req, res) => {
     });
   }
 
-  pool.run(
+  db.run(
     'INSERT INTO products (name, description, price, quantity) VALUES (?, ?, ?, ?)',
     [name, description, price, quantity],
     function (err) {
