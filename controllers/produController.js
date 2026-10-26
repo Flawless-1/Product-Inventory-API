@@ -1,30 +1,48 @@
-const pool = require('../config/db');
+const db = require('../config/db');
 
-// --- IMPLEMENTED BY LEAD ---
 // GET /api/products
-exports.getAllProducts = async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM products ORDER BY created_at DESC');
-    res.status(200).json({ success: true, count: result.rows.length, data: result.rows });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ success: false, error: 'Server Error' });
-  }
+exports.getAllProducts = (req, res) => {
+  const sql = 'SELECT * FROM products ORDER BY created_at DESC';
+
+  db.all(sql, [], (err, rows) => {
+    if (err) {
+      console.error(err.message);
+      return res.status(500).json({ success: false, error: 'Server Error' });
+    }
+
+    res.status(200).json({
+      success: true,
+      count: rows.length,
+      data: rows
+    });
+  });
 };
 
 // GET /api/products/:id
-exports.getProductById = async (req, res) => {
-  // TODO: Team Member 1 - Implement fetching a single product by its ID.
-  // Hint: Extract req.params.id, write a parameterized SQL query (SELECT * FROM products WHERE id = $1),
-  // and handle the case where the product isn't found (404 status).
-  res.status(501).json({ success: false, message: 'Not Implemented Yet - Assigned to Team Member 1' });
+exports.getProductById = (req, res) => {
+  const { id } = req.params;
+  const sql = 'SELECT * FROM products WHERE id = ?';
+
+  db.get(sql, [id], (err, row) => {
+    if (err) {
+      console.error(err.message);
+      return res.status(500).json({ success: false, error: 'Server Error' });
+    }
+    if (!row) {
+      return res.status(404).json({ success: false, error: 'Product not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: row
+    });
+  });
 };
 
 // POST /api/products
-exports.createProduct = async (req, res) => {
+exports.createProduct = (req, res) => {
   const { name, description, price, quantity } = req.body;
 
-  // Validate required fields
   if (
     !name ||
     price === undefined || price === null || price === '' ||
@@ -36,31 +54,79 @@ exports.createProduct = async (req, res) => {
     });
   }
 
-  db.run(
-    'INSERT INTO products (name, description, price, quantity) VALUES (?, ?, ?, ?)',
-    [name, description, price, quantity],
-    function (err) {
-      if (err) {
-        console.error(err.message);
-        return res.status(500).json({ success: false, error: 'Server Error' });
-      }
-      return res.status(201).json({ success: true, id: this.lastID });
+  const sql = `
+    INSERT INTO products (name, description, price, quantity) 
+    VALUES (?, ?, ?, ?)
+  `;
+
+  db.run(sql, [name, description, price, quantity], function (err) {
+    if (err) {
+      console.error(err.message);
+      return res.status(500).json({ success: false, error: 'Server Error' });
     }
-  );
+
+    res.status(201).json({
+      success: true,
+      id: this.lastID
+    });
+  });
 };
 
-// --- TEAM TASK 2 ---
 // PUT /api/products/:id
-exports.updateProduct = async (req, res) => {
-  // TODO: Team Member 2 - Implement updating product details or stock quantity.
-  // Hint: Check if product exists, then run an UPDATE query based on req.params.id and req.body.
-  res.status(501).json({ success: false, message: 'Not Implemented Yet - Assigned to Team Member 2' });
+exports.updateProduct = (req, res) => {
+  const { id } = req.params;
+  const { name, description, price, quantity } = req.body;
+
+  if (
+    !name ||
+    price === undefined || price === null || price === '' ||
+    quantity === undefined || quantity === null || quantity === ''
+  ) {
+    return res.status(400).json({
+      success: false,
+      error: 'name, price and quantity are required'
+    });
+  }
+
+  const sql = `
+    UPDATE products 
+    SET name = ?, description = ?, price = ?, quantity = ? 
+    WHERE id = ?
+  `;
+
+  db.run(sql, [name, description, price, quantity, id], function (err) {
+    if (err) {
+      console.error(err.message);
+      return res.status(500).json({ success: false, error: 'Server Error' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ success: false, error: 'Product not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Product updated successfully'
+    });
+  });
 };
 
-// --- TEAM TASK 2 ---
 // DELETE /api/products/:id
-exports.deleteProduct = async (req, res) => {
-  // TODO: Team Member 2 - Implement product deletion.
-  // Hint: Run a DELETE FROM products WHERE id = $1 query and return a success confirmation.
-  res.status(501).json({ success: false, message: 'Not Implemented Yet - Assigned to Team Member 2' });
+exports.deleteProduct = (req, res) => {
+  const { id } = req.params;
+  const sql = 'DELETE FROM products WHERE id = ?';
+
+  db.run(sql, [id], function (err) {
+    if (err) {
+      console.error(err.message);
+      return res.status(500).json({ success: false, error: 'Server Error' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ success: false, error: 'Product not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Product deleted successfully'
+    });
+  });
 };
