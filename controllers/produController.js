@@ -1,132 +1,104 @@
-const db = require('../config/db');
+// In-memory array storage to satisfy the "without a database" requirement
+let products = [
+  {
+    id: 1,
+    name: "Wireless Mouse",
+    description: "Ergonomic wireless mouse",
+    price: 25.99,
+    quantity: 15,
+    created_at: new Date().toISOString().replace('T', ' ').substring(0, 19)
+  }
+];
+let nextId = 2;
 
-// GET /api/products
+// Get all products
 exports.getAllProducts = (req, res) => {
-  const sql = 'SELECT * FROM products ORDER BY created_at DESC';
-
-  db.all(sql, [], (err, rows) => {
-    if (err) {
-      console.error(err.message);
-      return res.status(500).json({ success: false, error: 'Server Error' });
-    }
-
-    res.status(200).json({
-      success: true,
-      count: rows.length,
-      data: rows
-    });
+  res.status(200).json({
+    success: true,
+    count: products.length,
+    data: products
   });
 };
 
-// GET /api/products/:id
+// Get single product by ID
 exports.getProductById = (req, res) => {
-  const { id } = req.params;
-  const sql = 'SELECT * FROM products WHERE id = ?';
-
-  db.get(sql, [id], (err, row) => {
-    if (err) {
-      console.error(err.message);
-      return res.status(500).json({ success: false, error: 'Server Error' });
-    }
-    if (!row) {
-      return res.status(404).json({ success: false, error: 'Product not found' });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: row
-    });
+  const id = parseInt(req.params.id);
+  const product = products.find(p => p.id === id);
+  
+  if (!product) {
+    return res.status(404).json({ success: false, message: "Product not found" });
+  }
+  
+  res.status(200).json({
+    success: true,
+    data: product
   });
 };
 
-// POST /api/products
+// Create a new product
 exports.createProduct = (req, res) => {
   const { name, description, price, quantity } = req.body;
-
-  if (
-    !name ||
-    price === undefined || price === null || price === '' ||
-    quantity === undefined || quantity === null || quantity === ''
-  ) {
-    return res.status(400).json({
-      success: false,
-      error: 'name, price and quantity are required'
-    });
+  
+  if (!name || price === undefined || quantity === undefined) {
+    return res.status(400).json({ success: false, message: "Please provide name, price, and quantity" });
   }
 
-  const sql = `
-    INSERT INTO products (name, description, price, quantity) 
-    VALUES (?, ?, ?, ?)
-  `;
+  const newProduct = {
+    id: nextId++,
+    name,
+    description: description || "",
+    price: parseFloat(price),
+    quantity: parseInt(quantity),
+    created_at: new Date().toISOString().replace('T', ' ').substring(0, 19)
+  };
 
-  db.run(sql, [name, description, price, quantity], function (err) {
-    if (err) {
-      console.error(err.message);
-      return res.status(500).json({ success: false, error: 'Server Error' });
-    }
+  products.push(newProduct);
 
-    res.status(201).json({
-      success: true,
-      id: this.lastID
-    });
+  res.status(201).json({
+    success: true,
+    id: newProduct.id,
+    message: "Product created successfully"
   });
 };
 
-// PUT /api/products/:id
+// Update an existing product
 exports.updateProduct = (req, res) => {
-  const { id } = req.params;
-  const { name, description, price, quantity } = req.body;
+  const id = parseInt(req.params.id);
+  const index = products.findIndex(p => p.id === id);
 
-  if (
-    !name ||
-    price === undefined || price === null || price === '' ||
-    quantity === undefined || quantity === null || quantity === ''
-  ) {
-    return res.status(400).json({
-      success: false,
-      error: 'name, price and quantity are required'
-    });
+  if (index === -1) {
+    return res.status(404).json({ success: false, message: "Product not found" });
   }
 
-  const sql = `
-    UPDATE products 
-    SET name = ?, description = ?, price = ?, quantity = ? 
-    WHERE id = ?
-  `;
+  const { name, description, price, quantity } = req.body;
+  
+  products[index] = {
+    ...products[index],
+    name: name !== undefined ? name : products[index].name,
+    description: description !== undefined ? description : products[index].description,
+    price: price !== undefined ? parseFloat(price) : products[index].price,
+    quantity: quantity !== undefined ? parseInt(quantity) : products[index].quantity
+  };
 
-  db.run(sql, [name, description, price, quantity, id], function (err) {
-    if (err) {
-      console.error(err.message);
-      return res.status(500).json({ success: false, error: 'Server Error' });
-    }
-    if (this.changes === 0) {
-      return res.status(404).json({ success: false, error: 'Product not found' });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Product updated successfully'
-    });
+  res.status(200).json({
+    success: true,
+    message: "Product updated successfully"
   });
 };
 
-// DELETE /api/products/:id
+// Delete a product
 exports.deleteProduct = (req, res) => {
-  const { id } = req.params;
-  const sql = 'DELETE FROM products WHERE id = ?';
+  const id = parseInt(req.params.id);
+  const index = products.findIndex(p => p.id === id);
 
-  db.run(sql, [id], function (err) {
-    if (err) {
-      console.error(err.message);
-      return res.status(500).json({ success: false, error: 'Server Error' });
-    }
-    if (this.changes === 0) {
-      return res.status(404).json({ success: false, error: 'Product not found' });
-    }
+  if (index === -1) {
+    return res.status(404).json({ success: false, message: "Product not found" });
+  }
 
-    res.status(200).json({
-      success: true,
-      message: 'Product deleted successfully'
-    });
+  products.splice(index, 1);
+
+  res.status(200).json({
+    success: true,
+    message: "Product deleted successfully"
   });
 };
